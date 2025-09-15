@@ -95,4 +95,11 @@ class ArgumentParser {
 };
 ```
 
-with runtime checks on the argument names.
+with runtime checks on the argument names. For the compile time checks one would require to template the `add_xxx` functions on the argument name and perform static checks. Right now it's not possible to template on an `std::string` so workarounds are required (not interested). To complete the compile time discussion one would have to:
+  1. declare the parser along all the arguments as template arguments
+  2. validate the argument names based on the type (flag, optional or positional)
+  3. resolve the name collisions between arguments (a name can't be associated to multiple arguments at the same time)
+
+
+## Design philosophy
+In the spirit of single header libraries, simplicity is the highest value of this project. In a sense runtime checks and virtual inheritance (for the parsing of generic types) are better than heavy metaprogramming. When exploring template metaprogramming I had the feeling I was wrestling with the language, instead of flowing with it: not all C++ features are fit for every program.
