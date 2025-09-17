@@ -20,7 +20,8 @@ class ArgumentParser {
 	public:
 		ArgumentParser(const std::string& program_name, const std::string& program_description);
 
-		bool add_flag(const std::string& argument_name, bool& ref);
+		// TODO: signal that the add_xxx methods may throw exceptions
+		void add_flag(const std::string& argument_name, bool& ref);
 
 		template <typename T>
 		bool add_option(const std::string& argument_name, T& ref);
@@ -40,7 +41,7 @@ class ArgumentParser {
 		// positional arguments don't need a lookup.
 		// this set only handles name collisions
 		std::set<std::string> m_positional_dict;
-		std::vector<std::unique_ptr<ITokenParser>> m_positional_vect;
+		std::vector<std::unique_ptr<ITokenParser>> m_positional_list;
 };
 
 
@@ -50,7 +51,7 @@ class ArgumentParser {
 #include <iostream>
 
 
-const std::regex flag_rule = std::regex("-[\-a-zA-Z]+");
+const std::regex flag_rule = std::regex("-[-a-zA-Z]+");
 const std::regex optional_rule = flag_rule;
 const std::regex positional_rule = std::regex("[_a-zA-Z][_a-zA-Z0-9]*");
 
@@ -122,31 +123,27 @@ ArgumentParser::ArgumentParser(const std::string& program_name, const std::strin
 {}
 
 
-bool ArgumentParser::add_flag(const std::string& argument_name, bool& ref) {
+void ArgumentParser::add_flag(const std::string& argument_name, bool& ref) {
 	if (not std::regex_match(argument_name, flag_rule)) {
-		std::cerr << std::format("[ERROR]: `{}` is not an appropriate flag name\n", argument_name);
-		return false;
+		throw std::logic_error(std::format("[ERROR]: `{}` is not an appropriate flag name\n", argument_name));
 	}
 
 	if (m_flags_dict.contains(argument_name) or m_optionals_dict.contains(argument_name)) {
-		std::cerr << std::format("[ERROR]: `{}` has been already registered\n", argument_name);
-		return false;
+		throw std::logic_error(std::format("[ERROR]: `{}` has been already registered\n", argument_name));
 	}
 
-	m_flags_dict[argument_name] = ref;
+	// m_flags_dict[argument_name] = ref;
 }
 
 
 template <typename T>
 bool ArgumentParser::add_option(const std::string& argument_name, T& ref) {
-	if (not std::regex_match(argument_name, option_rule)) {
-		std::cerr << std::format("[ERROR]: `{}` is not an appropriate option name\n", argument_name);
-		return false;
+	if (not std::regex_match(argument_name, optional_rule)) {
+		throw std::logic_error(std::format("[ERROR]: `{}` is not an appropriate option name\n", argument_name));
 	}
 
 	if (m_flags_dict.contains(argument_name) or m_optionals_dict.contains(argument_name)) {
-		std::cerr << std::format("[ERROR]: `{}` has been already registered\n", argument_name);
-		return false;
+		throw std::logic_error(std::format("[ERROR]: `{}` has been already registered\n", argument_name));
 	}
 
 	// TODO: add parser to dictionary
@@ -155,14 +152,12 @@ bool ArgumentParser::add_option(const std::string& argument_name, T& ref) {
 
 template <typename T>
 bool ArgumentParser::add_positional(const std::string& argument_name, T& ref) {
-	if (nor std::regex_match(argument_name, positional_rule)) {
-		std::cerr << std::format("[ERROR]: `{}` is not an appropriate positional name, must be an identifier\n", argument_name);
-		return false;
+	if (not std::regex_match(argument_name, positional_rule)) {
+		throw std::logic_error(std::format("[ERROR]: `{}` is not an appropriate positional name, must be an identifier\n", argument_name));
 	}
 
 	if (m_positional_dict.contains(argument_name)) {
-		std::cerr << std::format("[ERROR]: another positional with name `{}` has already been registered\n", argument_name);
-		return false;
+		throw std::logic_error(std::format("[ERROR]: another positional with name `{}` has already been registered\n", argument_name));
 	}
 
 	m_positional_dict.insert(argument_name);
